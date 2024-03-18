@@ -6,8 +6,8 @@ let weights
 
 let tiles = []
 let activeTile = 0
-let tileWidth = 36
-let tileHeight = 36
+let tileWidth = 48
+let tileHeight = 48
 
 let agent
 
