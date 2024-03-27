@@ -1,15 +1,21 @@
 // Create a notes array for all 12 notes
-let notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+// let notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
+// Create a notes array from C2 to C4
+let notes = ["C2", "C#2", "D2", "D#2", "E2", "F2", "F#2", "G2", "G#2", "A2", "A#2", "B2", "C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3", "C4"]
+
+// Create an array for only white notes
+// let notes = ["C", "D", "E", "F", "G", "A", "B"]
+// 
 // let weights = new Array(notes.length).fill(1); // Start with equal weights
 // Start with random weights
 // let weights = [2, 1, 2, 1, 1, 2, 1]; // Corresponding to ["C", "D", "E", "F", "G", "A", "B"]
-let weights
+let weights = []
 
 let tiles = []
-let activeTile = 0
+let activeTile = null
 let tileWidth = 48
-let tileHeight = 48
+let tileHeight = 36
 
 let agent
 
@@ -27,13 +33,13 @@ function setup() {
     // }
 
     // Place the notes in a circle
-    let radius = 180
+    let radius = 300
     let angle = TWO_PI / notes.length
     for (let i = 0; i < notes.length; i++) {
         let x = width / 2 + cos(angle * i) * radius
         let y = height / 2 + sin(angle * i) * radius
         let note = notes[i]
-        tiles.push(new NoteTile(x, y, tileWidth, tileHeight, note, Math.floor(random(0, 3))))
+        tiles.push(new NoteTile(x, y, tileWidth, tileHeight, note, Math.floor(random(0))))
     }
 
     // Random weights
@@ -46,7 +52,7 @@ function setup() {
         collisionCheckers.push(false)
     }
 
-    // Get the weights of all tiles and store them in a weights object
+    // Get the weights of all tiles and store them in a weights array
     weights = tiles.map(tile => tile.weight)
 
     // Create an agent
@@ -68,9 +74,18 @@ function draw() {
     }
 
     // console.log(weights)
+    console.log(activeTile)
+
+    // Check if the values of all elements of the weights array are 0. If yes, log to the console
+    if (weights.every(weight => weight === 0)) {
+        // Move the agent to the center of the canvas
+        agent.move({x: width / 2, y: height / 2})
+    } else {
+        agent.move(tiles[activeTile])
+    }
 
     // Move the agent towards the note
-    agent.move(tiles[activeTile])
+    
     agent.draw()
 
     // Check collisions between agent and note
@@ -91,11 +106,13 @@ class Agent {
 
     draw() {
         fill(255)
-        ellipse(this.x, this.y, this.w, this.h)
+        ellipse(this.x, this.y, this.w, this.h) 
     }
 
     getNextNoteIndex(weights) {
+        // console.log(weights)
         let totalWeight = weights.reduce((a, b) => a + b, 0);
+        // console.log(totalWeight)
         let randomNum = Math.random() * totalWeight;
         let weightSum = 0;
     
@@ -104,10 +121,10 @@ class Agent {
             weightSum = +weightSum.toFixed(2);
     
             if (randomNum <= weightSum) {
+                console.log
                 return i;
             }
         }
-        
     }
 
     // Make the agent move towards the center of a given note, and have it slow down as it reaches the note
@@ -143,7 +160,7 @@ class NoteTile {
         this.h = h
         this.note = note
         this.weight = weight
-        this.fill = 160  
+        this.fill = 80  
     }
 
     // Check if agent is over the tile
@@ -152,7 +169,7 @@ class NoteTile {
     }
 
     draw() {
-        rectMode(CENTER)
+        rectMode(CENTER)  
 
         // Change the fill color if the agent is over the tile
         if (this.contains(agent.x, agent.y)) {
@@ -162,28 +179,49 @@ class NoteTile {
 
             // Increase the size of the rectangly smoothly
             this.w = lerp(this.w, 64, 0.1)
-            this.h = lerp(this.h, 64, 0.1)
+            this.h = lerp(this.h, 48, 0.1)
         } else {
             // this.fill = 160
             // Change the color back smoothly
-            this.fill = lerp(this.fill, 160, 0.1)
+            this.fill = lerp(this.fill, 80, 0.1)
 
             // Decrease the size of the rectangly smoothly
             this.w = lerp(this.w, 48, 0.1)
-            this.h = lerp(this.h, 48, 0.1)
+            this.h = lerp(this.h, 36, 0.1)
         }
 
         fill(this.fill)
-        rect(this.x, this.y, this.w, this.h, 12)
+        rect(this.x, this.y, this.w, this.h)
 
-        fill(0)
+        // Slider fill
+        // Map the fill to the weight
+        let sliderFill = map(this.weight, 0, 3, 200, 255)
+        fill(sliderFill)
+        // Create a similar sliderHeight variable that maps the weight to the height of the note
+        let sliderHeight = map(this.weight, 0, 3, 0, this.h)
+        // Create a rectangle that uses sliderHeight
+        rect(this.x, this.y + this.h / 2 - sliderHeight / 2, this.w, sliderHeight)
+
+        // If mouse is over slider, and the user clicks and drags, change the height of the fill
+        if (mouseIsPressed && this.contains(mouseX, mouseY)) {
+            this.weight = Math.floor(map(mouseY, this.y - this.h / 2, this.y + this.h / 2, 4, 0))
+            // Update the weights array
+            weights = tiles.map(tile => tile.weight)
+            // Change the activeTile to the tile that is being clicked
+            activeTile = tiles.indexOf(this)
+        }
+
+        fill(255)
         // Increase text size to 24 px
-        textSize(16)
+        textSize(12)
         // Center the text
         textAlign(CENTER, CENTER)
 
         // Draw the note name
-        text(this.note, this.x, this.y)
+        // text(this.note, this.x, this.y)
+
+        // Draw the note name under the rectangle
+        text(this.note, this.x, this.y + this.h / 2 + 16)
 
     }
 }
@@ -237,8 +275,12 @@ function checkCollision(agent, tiles) {
     }
 }
 
-function noteToMidi (note) {
-    let noteIndex = notes.indexOf(note)
-    let midiNote = 60 + noteIndex
-    return midiNote
+// Create a noteToMidi function that is able to account for octave numbers
+function noteToMidi(note) {
+    let noteName = note.slice(0, -1);
+    let octave = note.slice(-1);
+    let notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    let noteIndex = notes.indexOf(noteName);
+    let midiNote = noteIndex + 12 * (parseInt(octave) + 1);
+    return midiNote;
 }
