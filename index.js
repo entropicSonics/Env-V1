@@ -4,6 +4,9 @@
 // Create a notes array from C2 to C4
 let notes = ["C2", "C#2", "D2", "D#2", "E2", "F2", "F#2", "G2", "G#2", "A2", "A#2", "B2", "C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3", "C4"]
 
+// Create a notes array from C3 to B4
+// let notes = ["C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3", "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4", "C4"]
+
 // Create an array for only white notes
 // let notes = ["C", "D", "E", "F", "G", "A", "B"]
 // 
@@ -33,14 +36,30 @@ function setup() {
     // }
 
     // Place the notes in a circle
-    let radius = 300
-    let angle = TWO_PI / notes.length
+    // let radius = 300
+    // let angle = TWO_PI / notes.length
+    // for (let i = 0; i < notes.length; i++) {
+    //     let x = width / 2 + cos(angle * i) * radius
+    //     let y = height / 2 + sin(angle * i) * radius
+    //     let note = notes[i]
+    //     tiles.push(new NoteTile(x, y, tileWidth, tileHeight, note, Math.floor(random(0))))
+    // }
+
+    // Place the notes in two columns
+    let x = width / 4 - 48
+    let y = height / 4
+    let xSpacing = 100
+    let ySpacing = 100
     for (let i = 0; i < notes.length; i++) {
-        let x = width / 2 + cos(angle * i) * radius
-        let y = height / 2 + sin(angle * i) * radius
         let note = notes[i]
-        tiles.push(new NoteTile(x, y, tileWidth, tileHeight, note, Math.floor(random(0))))
+        tiles.push(new NoteTile(x, y, tileWidth, tileHeight, note, 0))
+        y += ySpacing
+        if (y > height - height / 4) {
+            y = height / 4
+            x += xSpacing
+        }
     }
+
 
     // Random weights
     // for (let i = 0; i < notes.length; i++) {
@@ -56,7 +75,7 @@ function setup() {
     weights = tiles.map(tile => tile.weight)
 
     // Create an agent
-    agent = new Agent(width / 2, height / 2, 16, 16)
+    agent = new Agent(width / 2, 140, 16, 16)
 
     // Accessing MIDI with webmidi.js
     WebMidi
@@ -79,7 +98,7 @@ function draw() {
     // Check if the values of all elements of the weights array are 0. If yes, log to the console
     if (weights.every(weight => weight === 0)) {
         // Move the agent to the center of the canvas
-        agent.move({x: width / 2, y: height / 2})
+        agent.move({x: width / 2, y: 140})
     } else {
         agent.move(tiles[activeTile])
     }
@@ -121,7 +140,6 @@ class Agent {
             weightSum = +weightSum.toFixed(2);
     
             if (randomNum <= weightSum) {
-                console.log
                 return i;
             }
         }
@@ -190,6 +208,13 @@ class NoteTile {
             this.h = lerp(this.h, 36, 0.1)
         }
 
+        // If the weight is 0, don't change the fill color and the size of the rectangle
+        if (this.weight === 0) {
+            this.fill = 80
+            this.w = 48
+            this.h = 36
+        }
+
         fill(this.fill)
         rect(this.x, this.y, this.w, this.h)
 
@@ -245,31 +270,34 @@ function checkCollision(agent, tiles) {
 
     // For every element in the chords array
     for (let i = 0; i < tiles.length; i++) {
-    // Check if the agent is over the tile
-    if(tiles[i].contains(agent.x, agent.y)) {
-        // If the agent is over the tile, check if the collision checker is false
-        if (collisionCheckers[i] == false) {
-                // If the collision checker is false, play a note and set the collision checker to true
-                collisionCheckers[i] = true
+    // Check if the tile has a weight greater than 0
+    if (tiles[i].weight > 0) {
+        // Check if the agent is over the tile
+        if(tiles[i].contains(agent.x, agent.y)) {
+            // If the agent is over the tile, check if the collision checker is false
+            if (collisionCheckers[i] == false) {
+                    // If the collision checker is false, play a note and set the collision checker to true
+                    collisionCheckers[i] = true
 
-                // Get note from the tile
-                let note = tiles[i].note
-                // Convert note to MIDI note number
-                let midiNote = noteToMidi(note)
+                    // Get note from the tile
+                    let note = tiles[i].note
+                    // Convert note to MIDI note number
+                    let midiNote = noteToMidi(note)
 
-                midiOut.sendNoteOn(midiNote)
-        }
-    } else {
-        if (collisionCheckers[i] == true) {
-                // If the collision checker is true, stop the note and set the collision checker to false
-                collisionCheckers[i] = false
-                
-                // Get note from the tile
-                let note = tiles[i].note
-                // Convert note to MIDI note number
-                let midiNote = noteToMidi(note)
+                    midiOut.sendNoteOn(midiNote)
+            }
+        } else {
+            if (collisionCheckers[i] == true) {
+                    // If the collision checker is true, stop the note and set the collision checker to false
+                    collisionCheckers[i] = false
+                    
+                    // Get note from the tile
+                    let note = tiles[i].note
+                    // Convert note to MIDI note number
+                    let midiNote = noteToMidi(note)
 
-                midiOut.sendNoteOff(midiNote)
+                    midiOut.sendNoteOff(midiNote)
+                }
             }
         }
     }
