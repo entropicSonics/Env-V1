@@ -46,7 +46,7 @@ function setup() {
     // }
 
     // Place the notes in two columns
-    let x = width / 4 - 48
+    let x = width / 4 - 49
     let y = height / 4
     let xSpacing = 100
     let ySpacing = 100
